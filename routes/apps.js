@@ -2,6 +2,12 @@ const models = require('../models');
 const express = require('express');
 const router = express.Router();
 
+router.get('/', (req, res) => {
+    models.App.all().then(apps => {
+        res.json(apps);
+    });
+});
+
 router.post('/', (req, res) => {
     const name = req.body.name;
     const description = req.body.description;
@@ -10,23 +16,41 @@ router.post('/', (req, res) => {
         description: description
     }).then(app => {
         res.json({
-            id: task.id,
-            key: task.key
+            id: app.id,
+            key: app.key
         });
     });
 });
 
-router.delete('/:id', (req, res) => {
-    const id = req.body.id;
+router.put('/:id', (req, res) => {
+    const id = req.params.id;
     const key = req.body.key;
-    models.App.findById(id).then(app => {
-        if (key == app.key) {
-            app.destroy();
+    models.App.auth(id, key).then(app => {
+        const updates = {};
+        ['name', 'description'].forEach(function(field) {
+            if (field in req.body) {
+                updates[field] = req.body[field];
+            }
+        });
+        app.update(updates).then(() => {
             res.json({});
-        } else {
-            res.status(400);
-            res.json({'error': 'invalid key'});
-        }
+        });
+    }).catch(error => {
+        res.status(400);
+        res.json({'error': error});
+    });
+});
+
+router.delete('/:id', (req, res) => {
+    const id = req.params.id;
+    const key = req.body.key;
+    models.App.auth(id, key).then(app => {
+        app.destroy().then(() => {
+            res.json({});
+        });
+    }).catch(error => {
+        res.status(400);
+        res.json({'error': error});
     });
 });
 

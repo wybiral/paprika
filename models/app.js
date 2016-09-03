@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 
 module.exports = (sequelize, DataTypes) => {
-    return sequelize.define('App', {
+    const App = sequelize.define('App', {
         key: {
             type: DataTypes.CHAR(16),
             unique: true,
@@ -17,12 +17,33 @@ module.exports = (sequelize, DataTypes) => {
         }
     }, {
         classMethods: {
+            auth: (id, key) => {
+                return new Promise((resolve, reject) => {
+                    App.findById(id).then(app => {
+                        if (key === app.key) {
+                            resolve(app);
+                        } else {
+                            reject('invalid key');
+                        }
+                    }).catch(() => {
+                        reject('invalid app id');
+                    });
+                });
+            }
         },
         getterMethods: {
         },
         setterMethods: {
         },
         instanceMethods: {
+            toJSON: function() {
+                return {
+                    id: this.id,
+                    name: this.name,
+                    description: this.description
+                };
+            }
         }
     });
+    return App;
 };
